@@ -2,6 +2,38 @@ import open3d as o3d
 import numpy as np
 import copy
 
+
+def farthestPointDownSample(vertices, num_point_sampled, return_flag=False):
+    """ Use Farthest Point Sampling [FPS] to get a down sampled pointcloud
+		INPUT:
+            vertices: numpy array, shape (n,3)
+            num_point_sampled: int, the desired number of points after down sampling
+            return_flag: numpy boolean array, the mask of selected points in the vertices
+        OUTPUT:
+            downSampledVertices: down sampled points with the original data type
+	""" 
+    N = len(vertices)
+    n = num_point_sampled
+    assert n <= N, "Num of sampled point should be less than or equal to the size of vertices."
+    _G = np.mean(vertices, axis=0) # centroid of vertices
+    _d = np.linalg.norm(vertices - _G, axis=1, ord=2)
+    farthest = np.argmax(_d) 
+    distances = np.inf * np.ones((N,))
+    flags = np.zeros((N,), np.bool_) 
+    for i in range(n):
+        flags[farthest] = True
+        distances[farthest] = 0.
+        p_farthest = vertices[farthest]
+        dists = np.linalg.norm(vertices[~flags] - p_farthest, axis=1, ord=2)
+        distances[~flags] = np.minimum(distances[~flags], dists)
+        farthest = np.argmax(distances)
+    if return_flag == True:
+        return vertices[flags], flags
+    else:
+        return vertices[flags]
+
+
+
 def fixedNumDownSample(vertices, desiredNumOfPoint, leftVoxelSize, rightVoxelSize):
     """ Use the method voxel_down_sample defined in open3d and do bisection iteratively 
         to get the appropriate voxel_size which yields the points with the desired number.
