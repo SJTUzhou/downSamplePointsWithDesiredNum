@@ -5,7 +5,7 @@ import copy
 
 def farthestPointDownSample(vertices, num_point_sampled, return_flag=False):
     """ Use Farthest Point Sampling [FPS] to get a down sampled pointcloud
-		INPUT:
+	INPUT:
             vertices: numpy array, shape (n,3)
             num_point_sampled: int, the desired number of points after down sampling
             return_flag: numpy boolean array, the mask of selected points in the vertices
