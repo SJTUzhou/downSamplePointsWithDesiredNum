@@ -6,7 +6,7 @@ import copy
 def farthestPointDownSample(vertices, num_point_sampled, return_flag=False):
     """ Use Farthest Point Sampling [FPS] to get a down sampled pointcloud
 	INPUT:
-            vertices: numpy array, shape (n,3)
+            vertices: numpy array, shape (n,3) or (n,2)
             num_point_sampled: int, the desired number of points after down sampling
             return_flag: numpy boolean array, the mask of selected points in the vertices
         OUTPUT:
@@ -31,6 +31,43 @@ def farthestPointDownSample(vertices, num_point_sampled, return_flag=False):
         return vertices[flags], flags
     else:
         return vertices[flags]
+
+
+@numba.njit(numba.float64[:,:](numba.float64[:,:],numba.intc), cache=True, parallel=True)
+def numbaFarthestPointDownSample(vertices, num_point_sampled):
+    """ Use Farthest Point Sampling [FPS] to get a down sampled pointcloud
+	INPUT:
+            vertices: numpy array, shape (n,3) or (n,2)
+            num_point_sampled: int, the desired number of points after down sampling
+        OUTPUT:
+            downSampledVertices: down sampled points with the original data type
+	""" 
+    N = vertices.shape[0]
+    D = vertices.shape[1]
+    assert num_point_sampled <= N, "Num of sampled point should be less than or equal to the size of vertices."
+    _G = np.empty((D,),np.float64)
+    for d in range(D):
+        _G[d] = np.mean(vertices[:,d])
+
+    dists = np.zeros((N,),np.float64)
+    for i in numba.prange(N):
+        for d in range(D):
+            dists[i] += (vertices[i,d] - _G[d])**2
+    farthest = np.argmax(dists) 
+    distances = np.inf * np.ones((N,))
+    flags = np.zeros((N,), np.bool_)
+    for _ in range(num_point_sampled):
+        flags[farthest] = True
+        distances[farthest] = 0.
+        p_farthest = vertices[farthest]
+        for i in numba.prange(N):
+            dist = 0.
+            if not flags[i]:
+                for d in range(D):
+                    dist += (vertices[i,d] - p_farthest[d])**2
+            distances[i] = min(distances[i], dist)
+        farthest = np.argmax(distances)
+    return vertices[flags]
 
 
 
