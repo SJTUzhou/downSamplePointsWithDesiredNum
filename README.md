@@ -1,8 +1,11 @@
 # downSamplePointsWithDesiredNum
 
 python 3.8
+
 numpy 1.19.5
+
 numba 0.56.4
+
 open3d 0.14
 
 
